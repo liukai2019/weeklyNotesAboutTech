@@ -1,0 +1,18 @@
+{
+  "files.autoSave": "off",
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {},
+  "files.trimTrailingWhitespace": false,
+  "files.insertFinalNewline": false,
+
+  "extensions.autoCheckUpdates": false,
+  "extensions.autoUpdate": false,
+
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.enablePreviewFromQuickOpen": false,
+
+  "markdown.preview.breaks": true,
+  "markdown.preview.scrollEditorWithPreview": true,
+"markdown.preview.scrollPreviewWithEditor": true,
+"explorer.sortOrder": "modified"
+}

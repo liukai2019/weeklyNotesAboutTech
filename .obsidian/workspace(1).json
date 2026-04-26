@@ -1,0 +1,228 @@
+{
+  "main": {
+    "id": "a2335429aeaacd3a",
+    "type": "split",
+    "children": [
+      {
+        "id": "384a8a5577eeaf43",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c450aa61c1af21bc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "202510061852.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "202510061852"
+            }
+          },
+          {
+            "id": "7a93c9dc2731f0c0",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "202510181613.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "202510181613"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "dae023f8e8469fec",
+    "type": "split",
+    "children": [
+      {
+        "id": "591a0cbd050a855e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "11ac5ad576a7f669",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "da8751c10e7affb6",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "68a3000db286ae82",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "4f489cad76e4b0cf",
+    "type": "split",
+    "children": [
+      {
+        "id": "ae6f1d57273fb5f7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4b561b115f7888ab",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "反向链接"
+            }
+          },
+          {
+            "id": "e7c643bc994ab474",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "出链"
+            }
+          },
+          {
+            "id": "73cc5567dbc9951c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "1bce7e53462d43dc",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "zk-prefixer:Create new unique note": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "7a93c9dc2731f0c0",
+  "lastOpenFiles": [
+    "202510091218.md",
+    "202510181613.md",
+    "202510071921.md",
+    "202510061852.md",
+    "202510072125.md",
+    "202509021054.md",
+    "202509031648.md",
+    "202508301655.md",
+    "202509032024.md",
+    "202509032035.md",
+    "202509061749.md",
+    "202509071852.md",
+    "202509080101.md",
+    "202509122104.md",
+    "202509141120.md",
+    "202509152204.md",
+    "202509201046.md",
+    "202509230842.md",
+    "202509280850.md",
+    "202509281048.md",
+    "202510010408.md",
+    "202510050843.md",
+    "202510061552.md",
+    "202505072033.md",
+    "202505062226.md",
+    "202505021913.md",
+    "assets/Pasted image 20251006155317.png",
+    "assets/Pasted image 20251006155252.png",
+    "assets/Pasted image 20250921193005.png",
+    "assets/Pasted image 20250921192926.png",
+    "assets/Pasted image 20250921192833.png",
+    "assets/Pasted image 20250921192651.png",
+    "assets/Pasted image 20250921192546.png",
+    "assets/Pasted image 20250921192445.png",
+    "assets/Pasted image 20250921192405.png",
+    "assets/Pasted image 20250921192326.png",
+    "未命名.base",
+    "Excalidraw",
+    "assets/Untitled (Draft).pdf",
+    "Untitled.canvas"
+  ]
+}

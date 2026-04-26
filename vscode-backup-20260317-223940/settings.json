@@ -1,0 +1,243 @@
+{
+    "workbench.colorTheme": "Solarized Light",
+    "security.workspace.trust.untrustedFiles": "open",
+    "editor.largeFileOptimizations": false,
+    "vim.easymotion": true,
+    "vim.useCtrlKeys": false,
+    "window.commandCenter": false,
+    "window.customTitleBarVisibility": "never",
+    "window.titleBarStyle": "native",
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.showTabs": "multiple",
+    "breadcrumbs.enabled": true,
+    "breadcrumbs.filePath": "on",
+    "vim.handleKeys": {
+      "<C-k>": false,
+      "<C-w>": false
+    },
+    "cmake.showOptionsMovedNotification": false,
+    "search.seedWithNearestWord": true,
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ],
+    "http.proxySupport": "off",
+    "editor.renderWhitespace": "none",
+    "prettier.tabWidth": 4,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "remote.autoForwardPortsSource": "hybrid",
+    "clangd.path": "c:\\Users\\kai.liu1\\AppData\\Roaming\\Code\\User\\globalStorage\\llvm-vs-code-extensions.vscode-clangd\\install\\19.1.2\\clangd_19.1.2\\bin\\clangd.exe",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "workbench.editor.labelFormat": "medium",
+    "window.title": "${dirty}${activeEditorLong}${separator}${rootName}${separator}${profileName}${separator}${appName}",
+  "better-comments-next.highlightPlainText": false,
+  "better-comments-next.anchors": [
+    {
+      "tag": "ANCHOR",
+      "color": "#FFD700",
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "SECTION",
+      "color": "#87CEEB",
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "BUG",
+      "color": "#FF6347",
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "FIXME",
+      "color": "#FF8C00",
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    }
+  ],
+  "better-comments-next.tags": [
+    {
+      "tag": "!",
+      "color": "#FF2D00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "?",
+      "color": "#3498DB",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": true
+    },
+    {
+      "tag": "//",
+      "color": "#474747",
+      "strikethrough": true,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "todo",
+      "color": "#FF8C00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "note",
+      "color": "#2E8B57",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    }
+  ],
+  "[tcl]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": false,
+    "editor.wordWrap": "on",
+    "files.eol": "\\n",
+    "editor.fontSize": 14,
+    "editor.wordWrapColumn": 120
+  },
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.guides.indentation": true,
+  "editor.wordWrapColumn": 120,
+  "files.associations": {
+    "*.tcl": "tcl",
+    "*.tk": "tcl",
+    "*.test": "tcl"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.git": true
+  },
+
+  "editor.fontFamily": "Cascadia Code, Fira Code, Consolas, 'Courier New', monospace",
+  "editor.fontSize": 15,
+  "editor.lineHeight": 26,
+  "editor.letterSpacing": 0.2,
+  "editor.fontLigatures": true,
+  "editor.cursorStyle": "line",
+  "editor.cursorBlinking": "smooth",
+  "editor.minimap.enabled": false,
+  "editor.padding.top": 12,
+  "editor.padding.bottom": 12,
+  "editor.mouseWheelZoom": true,
+
+  "workbench.colorCustomizations": {
+    "editor.background": "#FBF5EE",
+    "editor.foreground": "#2C2C2C",
+    "editorLineNumber.foreground": "#8B6F47",
+    "editorLineNumber.activeForeground": "#5A3F2A",
+    "editor.selectionBackground": "#F1E3C8",
+    "editor.inactiveSelectionBackground": "#F6E9D6",
+    "editor.lineHighlightBackground": "#FFF2D9",
+    "editorCursor.foreground": "#6B4C3B",
+    "editorIndentGuide.background": "#EFE2CA",
+    "editorIndentGuide.activeBackground": "#E6D0B1",
+    "sideBar.background": "#F7F1E7",
+    "activityBar.background": "#F6EDE1",
+    "statusBar.background": "#EDE1D5",
+    "tab.activeBackground": "#FFF8EE",
+    "tab.inactiveBackground": "#F6EFE6"
+  },
+
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "comment, punctuation.definition.comment",
+        "settings": {
+          "foreground": "#8B7760",
+          "fontStyle": "italic"
+        }
+      },
+      {
+        "scope": "keyword, storage.type, storage.modifier",
+        "settings": {
+          "foreground": "#B85C38",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "string, constant.other.symbol",
+        "settings": {
+          "foreground": "#D96A2B"
+        }
+      },
+      {
+        "scope": "constant.numeric, constant.language",
+        "settings": {
+          "foreground": "#9B5C00"
+        }
+      },
+      {
+        "scope": "entity.name.function, support.function",
+        "settings": {
+          "foreground": "#2E6F61"
+        }
+      },
+      {
+        "scope": "variable, variable.parameter",
+        "settings": {
+          "foreground": "#6B4C3B"
+        }
+      },
+      {
+        "scope": "entity.name.type, support.type",
+        "settings": {
+          "foreground": "#7E3F3F"
+        }
+      },
+      {
+        "scope": "punctuation, meta.brace",
+        "settings": {
+          "foreground": "#4B3A2C"
+        }
+      }
+    ]
+  },
+  "search.sortOrder": "modified",
+  "explorer.sortOrder": "modified",
+  "claudeCodeChat.wsl.enabled": false,
+  "claudeCodeChat.wsl.distro": "Ubuntu",
+  "claudeCodeChat.wsl.nodePath": "/usr/bin/node",
+  "claudeCodeChat.wsl.claudePath": "/usr/local/bin/claude",
+  "chat.viewSessions.orientation": "stacked",
+  "claudeCode.selectedModel": " unisoc-code-base ",
+  "claudeCode.environmentVariables": [
+      {
+          "name": "ANTHROPIC_AUTH_TOKEN",
+          "value": "sk-YEPyGm9Q4xJAgnnwCAHR9CUrHJNRrzhEn5S921xfiAxdXC2y"
+      },
+      {
+          "name": "ANTHROPIC_BASE_URL",
+          "value": "http://ai.unisoc.com:8557"
+      },
+  ],
+  "chat.mcp.gallery.enabled": true
+}

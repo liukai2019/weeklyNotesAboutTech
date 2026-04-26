@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "New Timestamp Note",
+      "type": "shell",
+      "command": "$ts = Get-Date -Format 'yyyyMMddHHmm'; $path = Join-Path \"${workspaceFolder}\" ($ts + '.md'); if (-not (Test-Path $path)) { New-Item -ItemType File -Path $path | Out-Null }; code -r $path",
+      "problemMatcher": []
+    }
+  ]
+}

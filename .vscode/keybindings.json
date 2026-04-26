@@ -1,0 +1,26 @@
+[
+  {
+    "key": "ctrl+l j",
+    "command": "editor.action.insertSnippet",
+    "when": "editorTextFocus && editorLangId == markdown",
+    "args": {
+      "snippet": "- [ ] "
+    }
+  },
+  {
+    "key": "ctrl+l k",
+    "command": "runCommands",
+    "when": "editorTextFocus && editorLangId == markdown",
+    "args": {
+      "commands": [
+        "cursorEnd",
+        {
+          "command": "editor.action.insertSnippet",
+          "args": {
+            "snippet": "${TM_CURRENT_LINE/^.*(-\\s\\[[xX]\\])?.*$/${1:+ @ ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE} ${CURRENT_HOUR}:${CURRENT_MINUTE}}/}"
+          }
+        }
+      ]
+    }
+  }
+]
