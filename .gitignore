@@ -1,2 +1,11 @@
 
-/202604101237.md
+# Ignore everything by default
+*
+
+# Keep this ignore file tracked
+!/.gitignore
+
+# Allow only the target folder tree
+!/AI工作区域/
+!/AI工作区域/辅助记忆系统/
+!/AI工作区域/辅助记忆系统/**
