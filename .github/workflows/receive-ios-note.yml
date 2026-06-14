@@ -1,13 +1,16 @@
 name: Receive iOS Note
 
 on:
-  repository_dispatch:
-    types: [ios_note]
   workflow_dispatch:
     inputs:
       text:
-        description: Markdown content to save
+        description: Markdown content to append
         required: true
+        type: string
+      source:
+        description: Source of the note
+        required: false
+        default: ios-shortcut
         type: string
 
 permissions:
@@ -20,29 +23,34 @@ concurrency:
 jobs:
   save-note:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           ref: master
 
-      - name: Save note
+      - name: Append note
         shell: bash
-        env:
-          DISPATCH_TEXT: ${{ github.event.client_payload.text }}
-          MANUAL_TEXT: ${{ inputs.text }}
         run: |
           set -euo pipefail
 
-          text="${DISPATCH_TEXT:-$MANUAL_TEXT}"
-          if [ -z "$text" ]; then
-            echo "No note text was provided."
-            exit 1
-          fi
+          mkdir -p "AI工作区域"
 
-          mkdir -p inbox/ios
-          file="inbox/ios/$(TZ=Asia/Shanghai date +'%Y-%m-%d-%H%M%S').md"
-          printf '%s\n' "$text" > "$file"
+          file="AI工作区域/$(TZ=Asia/Shanghai date +'%Y-%m-%d').md"
+
+          {
+            echo ""
+            echo "## $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S %z')"
+            echo ""
+            echo "**source:** ${{ inputs.source }}"
+            echo ""
+            cat <<'EOF'
+${{ inputs.text }}
+EOF
+            echo ""
+          } >> "$file"
+
           echo "NOTE_FILE=$file" >> "$GITHUB_ENV"
 
       - name: Commit note
@@ -52,6 +60,7 @@ jobs:
 
           git config user.name "ios-note-bot"
           git config user.email "ios-note-bot@users.noreply.github.com"
+
           git add "$NOTE_FILE"
-          git commit -m "Add iOS note: $(basename "$NOTE_FILE" .md)"
+          git commit -m "Append iOS note: $(basename "$NOTE_FILE" .md)" || echo "No changes"
           git push
