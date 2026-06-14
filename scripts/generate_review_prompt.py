@@ -7,7 +7,6 @@ import os
 import smtplib
 import subprocess
 import sys
-import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
@@ -18,8 +17,8 @@ from typing import Iterable
 NOTE_ROOT = Path("AI工作区域")
 PROMPT_ROOT = Path("review-prompts")
 WINDOW_DAYS = (7, 14, 30)
-MAX_TOTAL_NOTE_CHARS = 80_000
-MAX_SINGLE_NOTE_CHARS = 20_000
+EXCERPT_CHAR_LIMIT = 500
+EMAIL_SOURCE_LIMIT = 5
 SMTP_SERVER = "smtp.qq.com"
 SMTP_PORT = 465
 
@@ -114,138 +113,111 @@ def collect_recent_notes(now_utc: datetime) -> tuple[int, list[Note]]:
     raise PromptError("No tracked non-empty Markdown notes were modified in 30 days.")
 
 
-def truncate_note(content: str, remaining_budget: int) -> tuple[str, bool]:
-    limit = min(MAX_SINGLE_NOTE_CHARS, max(0, remaining_budget))
-    if len(content) <= limit:
-        return content, False
-
-    marker = "\n\n[Truncated: note content exceeded the prompt budget.]"
-    return content[: max(0, limit - len(marker))].rstrip() + marker, True
+def github_blob_url(path: Path) -> str:
+    repo = os.environ.get("GITHUB_REPOSITORY", "liukai2019/weeklyNotesAboutTech")
+    server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+    branch = os.environ.get("GITHUB_REF_NAME", "master")
+    return f"{server_url}/{repo}/blob/{branch}/{path.as_posix()}"
 
 
-def render_source_list(notes: list[Note]) -> str:
-    lines = []
-    for note in notes:
-        modified = note.last_modified.astimezone(timezone(timedelta(hours=8)))
-        lines.append(f"- `{note.path.as_posix()}` - last modified {modified:%Y-%m-%d %H:%M:%S %z}")
-    return "\n".join(lines)
+def github_raw_url(path: Path) -> str:
+    repo = os.environ.get("GITHUB_REPOSITORY", "liukai2019/weeklyNotesAboutTech")
+    branch = os.environ.get("GITHUB_REF_NAME", "master")
+    return f"https://raw.githubusercontent.com/{repo}/{branch}/{path.as_posix()}"
 
 
-def render_note_excerpts(notes: list[Note]) -> tuple[str, bool]:
+def excerpt_note(content: str) -> tuple[str, bool]:
+    compact = content.strip()
+    if len(compact) <= EXCERPT_CHAR_LIMIT:
+        return compact, False
+
+    return compact[:EXCERPT_CHAR_LIMIT].rstrip(), True
+
+
+def blockquote(text: str, truncated: bool) -> str:
+    lines = text.splitlines() or [""]
+    if truncated:
+        lines.append("[truncated]")
+    return "\n".join(f"> {line}" if line else ">" for line in lines)
+
+
+def render_recent_sources(notes: list[Note]) -> tuple[str, int]:
     blocks: list[str] = []
-    remaining = MAX_TOTAL_NOTE_CHARS
-    any_truncated = False
+    truncated_count = 0
 
-    for note in notes:
+    for index, note in enumerate(notes, start=1):
         modified = note.last_modified.astimezone(timezone(timedelta(hours=8)))
-        header = (
-            f"\n\n---\n"
-            f"Source: {note.path.as_posix()}\n"
-            f"Last modified: {modified:%Y-%m-%d %H:%M:%S %z}\n\n"
+        excerpt, truncated = excerpt_note(note.content)
+        if truncated:
+            truncated_count += 1
+
+        blocks.append(
+            "\n".join(
+                [
+                    f"### {index}. {note.path.as_posix()}",
+                    "",
+                    f"- GitHub URL: {github_blob_url(note.path)}",
+                    f"- Raw URL: {github_raw_url(note.path)}",
+                    f"- Last modified: {modified:%Y-%m-%d %H:%M:%S %z}",
+                    "",
+                    "Excerpt:",
+                    "",
+                    blockquote(excerpt, truncated),
+                ]
+            )
         )
-        remaining -= len(header)
-        if remaining <= 0:
-            blocks.append("\n\n[Truncated: remaining notes omitted due to prompt budget.]")
-            any_truncated = True
-            break
 
-        excerpt, truncated = truncate_note(note.content, remaining)
-        blocks.append(header + excerpt)
-        remaining -= len(excerpt)
-        any_truncated = any_truncated or truncated
-
-    return "".join(blocks).strip(), any_truncated
+    return "\n\n".join(blocks), truncated_count
 
 
 def build_prompt(review_date: str, window_days: int, notes: list[Note]) -> str:
-    source_list = render_source_list(notes)
-    excerpts, truncated = render_note_excerpts(notes)
-    truncation_note = (
-        "Some note content was truncated to keep this prompt reusable."
-        if truncated
-        else "No note content was truncated."
-    )
+    recent_sources, truncated_count = render_recent_sources(notes)
 
     return f"""# Memory Review Prompt {review_date}
 
-You are my memory review coach.
-
-This is NOT a passive summarization task. Your job is to help me strengthen memory, retrieve ideas actively, connect concepts across days, notice important topics that are fading, generate curiosity, and identify notes that deserve long-term treatment.
+Act as my memory review coach. This is not passive summarization. Help me retrieve ideas actively, connect concepts, notice fading but important topics, generate curiosity, and identify notes worth turning into long-term knowledge.
 
 ## Context
 
 - Date range used: last {window_days} day(s)
 - Note root: `AI工作区域/`
-- Truncation status: {truncation_note}
-
-## Source Note Files
-
-{source_list}
+- Source file count: {len(notes)}
+- Excerpt limit: {EXCERPT_CHAR_LIMIT} characters per file
+- Truncated source excerpts: {truncated_count}
 
 ## Instructions
 
-Use the recent notes below to produce a memory-focused review with exactly this structure:
+Use the recent note sources below. Produce exactly this structure:
 
 ## 1. Active Recall Questions
 
-Generate 5-10 retrieval-based questions.
-
-The questions should require me to reconstruct reasoning, tradeoffs, causality, or implementation details from memory. Avoid trivial factual questions.
+Generate 5-10 retrieval-based questions. Require reasoning, tradeoffs, causality, or implementation details. Avoid trivial factual questions.
 
 ## 2. Concept Connections
 
-Identify meaningful links between different notes or themes. Explain why each connection matters.
+Identify meaningful links between different notes or themes, and explain why each matters.
 
 ## 3. Forgotten But Important
 
-Identify topics related to my long-term interests that have not appeared recently or deserve renewed attention.
-
-Long-term interests may include:
-
-- eBPF
-- Networking
-- OpenSpec
-- AI automation
-- GitHub Actions
-- iOS Shortcut
-- Grammar Club
-- English writing
-- Career development
-- Health and fitness
+Identify topics related to long-term interests that have not appeared recently or deserve renewed attention. Interests may include eBPF, Networking, OpenSpec, AI automation, GitHub Actions, iOS Shortcut, Grammar Club, English writing, Career development, and Health and fitness.
 
 ## 4. Exploration Candidates
 
-Generate 3-5 follow-up questions whose purpose is curiosity generation.
+Generate 3-5 curiosity-oriented follow-up questions.
 
 ## 5. Long-Term Knowledge Candidates
 
-Identify notes that should become permanent notes.
-
-For each candidate, provide:
-
-- title
-- reason
-- suggested destination
-
-Possible destinations:
-
-- Knowledge Systems/
-- AI Automation/
-- English Writing/
-- Career Development/
-- Software Engineering/
-- Networking/
-- Health/
+Identify notes that should become permanent notes. For each candidate provide title, reason, and suggested destination. Possible destinations: Knowledge Systems/, AI Automation/, English Writing/, Career Development/, Software Engineering/, Networking/, Health/.
 
 ## 6. Brief Summary
 
-Maximum 10 bullet points.
+Maximum 10 bullet points. Summary is the lowest-priority output.
 
-Summary is the lowest-priority output. Keep it concise.
+## Recent Note Sources
 
-## Recent Notes
+Use the links and excerpts below as compact source context. If a question requires more detail, inspect the GitHub URL or Raw URL for the source file.
 
-{excerpts}
+{recent_sources}
 """
 
 
@@ -253,7 +225,7 @@ def write_prompt(prompt: str, review_date: str) -> Path:
     PROMPT_ROOT.mkdir(parents=True, exist_ok=True)
     path = PROMPT_ROOT / f"{review_date}-review-prompt.md"
     path.write_text(prompt.rstrip() + "\n", encoding="utf-8")
-    log(f"Wrote prompt file: {path}")
+    log(f"Wrote prompt file: {path} ({len(prompt)} characters).")
     return path
 
 
@@ -275,22 +247,42 @@ def commit_and_push(path: Path, review_date: str) -> None:
 
 
 def github_file_url(path: Path) -> str:
-    repo = os.environ.get("GITHUB_REPOSITORY", "")
-    server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
-    branch = os.environ.get("GITHUB_REF_NAME", "master")
-    if not repo:
-        return path.as_posix()
-
-    quoted_path = urllib.parse.quote(path.as_posix())
-    return f"{server_url}/{repo}/blob/{branch}/{quoted_path}"
+    return github_blob_url(path)
 
 
-def send_email(prompt: str, prompt_path: Path, review_date: str) -> None:
+def raw_github_file_url(path: Path) -> str:
+    return github_raw_url(path)
+
+
+def render_email_body(prompt_path: Path, review_date: str, window_days: int, notes: list[Note]) -> str:
+    prompt_link = github_file_url(prompt_path)
+    listed_notes = notes[:EMAIL_SOURCE_LIMIT]
+    source_lines = [f"- {note.path.as_posix()}" for note in listed_notes]
+    remaining = len(notes) - len(listed_notes)
+    if remaining > 0:
+        source_lines.append(f"- ...and {remaining} more files")
+
+    return "\n".join(
+        [
+            f"Memory Review Prompt {review_date}",
+            "",
+            f"Date range used: last {window_days} day(s)",
+            f"Prompt file: {prompt_link}",
+            "",
+            "Source files:",
+            *source_lines,
+            "",
+            "Open the prompt file, copy it into ChatGPT, and continue interactive review.",
+        ]
+    )
+
+
+def send_email(prompt_path: Path, review_date: str, window_days: int, notes: list[Note]) -> None:
     qq_email = require_env("QQ_EMAIL")
     auth_code = require_env("QQ_SMTP_AUTH_CODE")
-    link = github_file_url(prompt_path)
     subject = f"Memory Review Prompt {review_date}"
-    body = f"GitHub prompt file: {link}\n\n{prompt}"
+    body = render_email_body(prompt_path, review_date, window_days, notes)
+    log(f"Email body size: {len(body)} characters.")
 
     message = MIMEText(body, "plain", "utf-8")
     message["From"] = qq_email
@@ -317,7 +309,7 @@ def main() -> int:
         prompt = build_prompt(review_date, window_days, notes)
         prompt_path = write_prompt(prompt, review_date)
         commit_and_push(prompt_path, review_date)
-        send_email(prompt, prompt_path, review_date)
+        send_email(prompt_path, review_date, window_days, notes)
         return 0
     except PromptError as exc:
         log(f"ERROR: {exc}")
