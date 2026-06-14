@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 import smtplib
 import subprocess
 import sys
@@ -19,8 +20,34 @@ PROMPT_ROOT = Path("review-prompts")
 WINDOW_DAYS = (7, 14, 30)
 EXCERPT_CHAR_LIMIT = 500
 EMAIL_SOURCE_LIMIT = 5
+PROMPT_TARGET_CHARS = 30_000
 SMTP_SERVER = "smtp.qq.com"
 SMTP_PORT = 465
+HUMAN_PREFIXES = (
+    "我",
+    "user",
+    "human",
+    "q",
+    "question",
+    "prompt",
+    "提问",
+    "用户",
+    "访客",
+    "me",
+)
+AI_PREFIXES = (
+    "ai",
+    "assistant",
+    "chatgpt",
+    "claude",
+    "grok",
+    "copilot",
+    "codex",
+    "answer",
+    "回答",
+    "回复",
+    "bot",
+)
 
 
 class PromptError(RuntimeError):
@@ -32,6 +59,21 @@ class Note:
     path: Path
     last_modified: datetime
     content: str
+
+
+@dataclass(frozen=True)
+class Message:
+    role: str
+    content: str
+
+
+@dataclass(frozen=True)
+class SourceInfo:
+    note: Note
+    file_size: int
+    first_heading: str | None
+    human_messages: list[str]
+    ai_message_count: int
 
 
 def log(message: str) -> None:
@@ -90,6 +132,13 @@ def read_note(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace").strip()
 
 
+def file_size(path: Path) -> int:
+    try:
+        return path.stat().st_size
+    except OSError:
+        return 0
+
+
 def collect_recent_notes(now_utc: datetime) -> tuple[int, list[Note]]:
     candidates: list[Note] = []
     for path in iter_note_paths():
@@ -111,6 +160,83 @@ def collect_recent_notes(now_utc: datetime) -> tuple[int, list[Note]]:
             return days, notes
 
     raise PromptError("No tracked non-empty Markdown notes were modified in 30 days.")
+
+
+def normalize_prefix(prefix: str) -> str:
+    return prefix.strip().casefold()
+
+
+def detect_role(line: str) -> tuple[str | None, str | None]:
+    stripped = line.strip()
+    if not stripped:
+        return None, None
+
+    match = re.match(r"^([A-Za-z]+|[\u4e00-\u9fff]{1,4})\s*[:：]\s*(.*)$", stripped)
+    if not match:
+        return None, None
+
+    prefix = normalize_prefix(match.group(1))
+    remainder = match.group(2)
+    if prefix in HUMAN_PREFIXES:
+        return "human", remainder
+    if prefix in AI_PREFIXES:
+        return "ai", remainder
+    return None, None
+
+
+def extract_messages(content: str) -> list[Message]:
+    messages: list[Message] = []
+    current_role: str | None = None
+    current_lines: list[str] = []
+
+    def flush() -> None:
+        nonlocal current_role, current_lines
+        if current_role is not None:
+            text = "\n".join(current_lines).strip()
+            if text:
+                messages.append(Message(current_role, text))
+        current_role = None
+        current_lines = []
+
+    for line in content.splitlines():
+        role, remainder = detect_role(line)
+        if role is not None:
+            flush()
+            current_role = role
+            current_lines = [remainder] if remainder else []
+            continue
+
+        if current_role is not None:
+            current_lines.append(line)
+
+    flush()
+    return messages
+
+
+def first_heading(content: str) -> str | None:
+    for line in content.splitlines():
+        match = re.match(r"^\s{0,3}#{1,6}\s+(.+?)\s*$", line)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def build_source_infos(notes: list[Note]) -> list[SourceInfo]:
+    infos: list[SourceInfo] = []
+    for note in notes:
+        messages = extract_messages(note.content)
+        human_messages = [message.content for message in messages if message.role == "human"]
+        ai_message_count = sum(1 for message in messages if message.role == "ai")
+        infos.append(
+            SourceInfo(
+                note=note,
+                file_size=file_size(note.path),
+                first_heading=first_heading(note.content),
+                human_messages=human_messages,
+                ai_message_count=ai_message_count,
+            )
+        )
+    return infos
 
 
 def github_blob_url(path: Path) -> str:
@@ -141,15 +267,25 @@ def blockquote(text: str, truncated: bool) -> str:
     return "\n".join(f"> {line}" if line else ">" for line in lines)
 
 
-def render_recent_sources(notes: list[Note]) -> tuple[str, int]:
+def format_size(num_bytes: int) -> str:
+    if num_bytes < 1024:
+        return f"{num_bytes} B"
+    return f"{num_bytes / 1024:.1f} KB"
+
+
+def render_recent_sources(infos: list[SourceInfo], include_excerpts: bool) -> tuple[str, int]:
     blocks: list[str] = []
     truncated_count = 0
 
-    for index, note in enumerate(notes, start=1):
+    for index, info in enumerate(infos, start=1):
+        note = info.note
         modified = note.last_modified.astimezone(timezone(timedelta(hours=8)))
-        excerpt, truncated = excerpt_note(note.content)
-        if truncated:
-            truncated_count += 1
+        excerpt_block = "> [excerpt omitted due to prompt budget]"
+        if include_excerpts:
+            excerpt, truncated = excerpt_note(note.content)
+            if truncated:
+                truncated_count += 1
+            excerpt_block = blockquote(excerpt, truncated)
 
         blocks.append(
             "\n".join(
@@ -159,10 +295,15 @@ def render_recent_sources(notes: list[Note]) -> tuple[str, int]:
                     f"- GitHub URL: {github_blob_url(note.path)}",
                     f"- Raw URL: {github_raw_url(note.path)}",
                     f"- Last modified: {modified:%Y-%m-%d %H:%M:%S %z}",
+                    f"- File size: {format_size(info.file_size)}",
+                    f"- First heading: {info.first_heading or 'None detected'}",
+                    "- Conversation stats:",
+                    f"  - Human messages: {len(info.human_messages)}",
+                    f"  - AI messages: {info.ai_message_count}",
                     "",
                     "Excerpt:",
                     "",
-                    blockquote(excerpt, truncated),
+                    excerpt_block,
                 ]
             )
         )
@@ -170,8 +311,25 @@ def render_recent_sources(notes: list[Note]) -> tuple[str, int]:
     return "\n\n".join(blocks), truncated_count
 
 
-def build_prompt(review_date: str, window_days: int, notes: list[Note]) -> str:
-    recent_sources, truncated_count = render_recent_sources(notes)
+def render_human_messages(infos: list[SourceInfo]) -> str:
+    blocks: list[str] = []
+    for info in infos:
+        if not info.human_messages:
+            continue
+        lines = [f"### {info.note.path.as_posix()}"]
+        for index, message in enumerate(info.human_messages, start=1):
+            lines.extend(["", f"#### Human Message {index}", "", message])
+        blocks.append("\n".join(lines))
+
+    if not blocks:
+        return "No explicit human messages were detected from known prefixes."
+    return "\n\n".join(blocks)
+
+
+def prompt_header(review_date: str, window_days: int, infos: list[SourceInfo], truncated_count: int) -> str:
+    total_human_messages = sum(len(info.human_messages) for info in infos)
+    total_ai_messages = sum(info.ai_message_count for info in infos)
+    files_with_human_messages = sum(1 for info in infos if info.human_messages)
 
     return f"""# Memory Review Prompt {review_date}
 
@@ -181,13 +339,16 @@ Act as my memory review coach. This is not passive summarization. Help me retrie
 
 - Date range used: last {window_days} day(s)
 - Note root: `AI工作区域/`
-- Source file count: {len(notes)}
+- Source file count: {len(infos)}
+- Files with human messages: {files_with_human_messages}
+- Total human messages: {total_human_messages}
+- Total AI messages: {total_ai_messages}
 - Excerpt limit: {EXCERPT_CHAR_LIMIT} characters per file
 - Truncated source excerpts: {truncated_count}
 
 ## Instructions
 
-Use the recent note sources below. Produce exactly this structure:
+Use the detected human messages and recent note sources below. Human messages are highest priority and are included in full when detected. Produce exactly this structure:
 
 ## 1. Active Recall Questions
 
@@ -212,6 +373,18 @@ Identify notes that should become permanent notes. For each candidate provide ti
 ## 6. Brief Summary
 
 Maximum 10 bullet points. Summary is the lowest-priority output.
+"""
+
+
+def build_prompt(review_date: str, window_days: int, notes: list[Note]) -> tuple[str, list[SourceInfo]]:
+    infos = build_source_infos(notes)
+    recent_sources, truncated_count = render_recent_sources(infos, include_excerpts=True)
+    human_messages = render_human_messages(infos)
+    prompt = f"""{prompt_header(review_date, window_days, infos, truncated_count)}
+
+## Detected Human Messages
+
+{human_messages}
 
 ## Recent Note Sources
 
@@ -220,20 +393,50 @@ Use the links and excerpts below as compact source context. If a question requir
 {recent_sources}
 """
 
+    if len(prompt) <= PROMPT_TARGET_CHARS:
+        return prompt, infos
 
-def write_prompt(prompt: str, review_date: str) -> Path:
+    log(
+        "Prompt exceeded target size with excerpts; preserving all human messages "
+        "and omitting general excerpts."
+    )
+    recent_sources, truncated_count = render_recent_sources(infos, include_excerpts=False)
+    prompt = f"""{prompt_header(review_date, window_days, infos, truncated_count)}
+
+## Prompt Size Note
+
+The prompt exceeded the target size because all detected human messages are preserved. General source excerpts were omitted, but source metadata and links remain.
+
+## Detected Human Messages
+
+{human_messages}
+
+## Recent Note Sources
+
+Use the links below as compact source context. If a question requires more detail, inspect the GitHub URL or Raw URL for the source file.
+
+{recent_sources}
+"""
+    return prompt, infos
+
+
+def write_prompt(prompt: str, review_date: str) -> tuple[Path, Path]:
     PROMPT_ROOT.mkdir(parents=True, exist_ok=True)
     path = PROMPT_ROOT / f"{review_date}-review-prompt.md"
-    path.write_text(prompt.rstrip() + "\n", encoding="utf-8")
+    latest_path = PROMPT_ROOT / "latest.md"
+    content = prompt.rstrip() + "\n"
+    path.write_text(content, encoding="utf-8")
+    latest_path.write_text(content, encoding="utf-8")
     log(f"Wrote prompt file: {path} ({len(prompt)} characters).")
-    return path
+    log(f"Wrote latest prompt file: {latest_path}.")
+    return path, latest_path
 
 
-def commit_and_push(path: Path, review_date: str) -> None:
+def commit_and_push(paths: list[Path], review_date: str) -> None:
     log("Committing prompt file if it changed.")
     run_git(["config", "user.name", "memory-prompt-bot"])
     run_git(["config", "user.email", "memory-prompt-bot@users.noreply.github.com"])
-    run_git(["add", path.as_posix()])
+    run_git(["add", *[path.as_posix() for path in paths]])
 
     unchanged = run_git(["diff", "--cached", "--quiet"], check=False).returncode == 0
     if unchanged:
@@ -254,13 +457,22 @@ def raw_github_file_url(path: Path) -> str:
     return github_raw_url(path)
 
 
-def render_email_body(prompt_path: Path, review_date: str, window_days: int, notes: list[Note]) -> str:
+def render_email_body(
+    prompt_path: Path,
+    latest_path: Path,
+    review_date: str,
+    window_days: int,
+    infos: list[SourceInfo],
+) -> str:
     prompt_link = github_file_url(prompt_path)
-    listed_notes = notes[:EMAIL_SOURCE_LIMIT]
-    source_lines = [f"- {note.path.as_posix()}" for note in listed_notes]
-    remaining = len(notes) - len(listed_notes)
+    latest_link = github_file_url(latest_path)
+    listed_infos = infos[:EMAIL_SOURCE_LIMIT]
+    source_lines = [f"- {info.note.path.as_posix()}" for info in listed_infos]
+    remaining = len(infos) - len(listed_infos)
     if remaining > 0:
         source_lines.append(f"- ...and {remaining} more files")
+    files_with_human_messages = sum(1 for info in infos if info.human_messages)
+    total_human_messages = sum(len(info.human_messages) for info in infos)
 
     return "\n".join(
         [
@@ -268,20 +480,30 @@ def render_email_body(prompt_path: Path, review_date: str, window_days: int, not
             "",
             f"Date range used: last {window_days} day(s)",
             f"Prompt file: {prompt_link}",
+            f"Latest prompt: {latest_link}",
+            f"Source file count: {len(infos)}",
+            f"Files with human messages: {files_with_human_messages}",
+            f"Total human messages: {total_human_messages}",
             "",
             "Source files:",
             *source_lines,
             "",
-            "Open the prompt file, copy it into ChatGPT, and continue interactive review.",
+            "Open latest.md, copy it into ChatGPT, and continue interactive review.",
         ]
     )
 
 
-def send_email(prompt_path: Path, review_date: str, window_days: int, notes: list[Note]) -> None:
+def send_email(
+    prompt_path: Path,
+    latest_path: Path,
+    review_date: str,
+    window_days: int,
+    infos: list[SourceInfo],
+) -> None:
     qq_email = require_env("QQ_EMAIL")
     auth_code = require_env("QQ_SMTP_AUTH_CODE")
     subject = f"Memory Review Prompt {review_date}"
-    body = render_email_body(prompt_path, review_date, window_days, notes)
+    body = render_email_body(prompt_path, latest_path, review_date, window_days, infos)
     log(f"Email body size: {len(body)} characters.")
 
     message = MIMEText(body, "plain", "utf-8")
@@ -306,10 +528,15 @@ def main() -> int:
     try:
         review_date = shanghai_now().strftime("%Y-%m-%d")
         window_days, notes = collect_recent_notes(datetime.now(timezone.utc))
-        prompt = build_prompt(review_date, window_days, notes)
-        prompt_path = write_prompt(prompt, review_date)
-        commit_and_push(prompt_path, review_date)
-        send_email(prompt_path, review_date, window_days, notes)
+        prompt, infos = build_prompt(review_date, window_days, notes)
+        total_human_messages = sum(len(info.human_messages) for info in infos)
+        if total_human_messages:
+            log(f"Detected {total_human_messages} human message(s); preserving all in full.")
+        else:
+            log("No explicit human messages were detected from known prefixes.")
+        prompt_path, latest_path = write_prompt(prompt, review_date)
+        commit_and_push([prompt_path, latest_path], review_date)
+        send_email(prompt_path, latest_path, review_date, window_days, infos)
         return 0
     except PromptError as exc:
         log(f"ERROR: {exc}")
