@@ -1,18 +1,19 @@
-name: Review Memory
+name: Generate Review Prompt
 
 on:
+  schedule:
+    - cron: "0 23 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
-  issues: write
 
 concurrency:
-  group: review-memory
+  group: generate-review-prompt
   cancel-in-progress: false
 
 jobs:
-  review-memory:
+  generate-review-prompt:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,11 +28,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Generate memory review
+      - name: Generate prompt and send email
         env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          GITHUB_TOKEN: ${{ github.token }}
+          QQ_EMAIL: ${{ secrets.QQ_EMAIL }}
+          QQ_SMTP_AUTH_CODE: ${{ secrets.QQ_SMTP_AUTH_CODE }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_REF_NAME: master
-        run: python scripts/review_memory.py
+        run: python scripts/generate_review_prompt.py
