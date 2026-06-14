@@ -18,6 +18,10 @@
 !/reviews/
 !/reviews/**
 
+# Allow generated reusable review prompts
+!/review-prompts/
+!/review-prompts/**
+
 # Allow only the target folder tree
 !/AI工作区域/
 !/AI工作区域/辅助记忆系统/
