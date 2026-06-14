@@ -1,0 +1,57 @@
+name: Receive iOS Note
+
+on:
+  repository_dispatch:
+    types: [ios_note]
+  workflow_dispatch:
+    inputs:
+      text:
+        description: Markdown content to save
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: receive-ios-note
+  cancel-in-progress: false
+
+jobs:
+  save-note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Save note
+        shell: bash
+        env:
+          DISPATCH_TEXT: ${{ github.event.client_payload.text }}
+          MANUAL_TEXT: ${{ inputs.text }}
+        run: |
+          set -euo pipefail
+
+          text="${DISPATCH_TEXT:-$MANUAL_TEXT}"
+          if [ -z "$text" ]; then
+            echo "No note text was provided."
+            exit 1
+          fi
+
+          mkdir -p inbox/ios
+          file="inbox/ios/$(TZ=Asia/Shanghai date +'%Y-%m-%d-%H%M%S').md"
+          printf '%s\n' "$text" > "$file"
+          echo "NOTE_FILE=$file" >> "$GITHUB_ENV"
+
+      - name: Commit note
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "ios-note-bot"
+          git config user.email "ios-note-bot@users.noreply.github.com"
+          git add "$NOTE_FILE"
+          git commit -m "Add iOS note: $(basename "$NOTE_FILE" .md)"
+          git push
