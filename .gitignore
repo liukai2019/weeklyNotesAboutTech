@@ -5,6 +5,19 @@
 # Keep this ignore file tracked
 !/.gitignore
 
+# Allow GitHub workflow files
+!/.github/
+!/.github/workflows/
+!/.github/workflows/**
+
+# Allow automation scripts
+!/scripts/
+!/scripts/**
+
+# Allow generated memory reviews
+!/reviews/
+!/reviews/**
+
 # Allow only the target folder tree
 !/AI工作区域/
 !/AI工作区域/辅助记忆系统/
