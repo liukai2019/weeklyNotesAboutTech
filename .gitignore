@@ -7,5 +7,6 @@
 
 # Allow only the target folder tree
 !/AI工作区域/
+!/AI工作区域/*.md
 !/AI工作区域/辅助记忆系统/
 !/AI工作区域/辅助记忆系统/**
