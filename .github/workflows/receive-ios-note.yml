@@ -7,11 +7,6 @@ on:
         description: Markdown content to append
         required: true
         type: string
-      source:
-        description: Source of the note
-        required: false
-        default: ios-shortcut
-        type: string
 
 permissions:
   contents: write
@@ -34,7 +29,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           mkdir -p "AI工作区域"
 
           file="AI工作区域/$(TZ=Asia/Shanghai date +'%Y-%m-%d').md"
@@ -42,8 +36,6 @@ jobs:
           {
             echo ""
             echo "## $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S %z')"
-            echo ""
-            echo "**source:** ${{ inputs.source }}"
             echo ""
             cat <<'EOF'
 ${{ inputs.text }}
@@ -57,10 +49,8 @@ EOF
         shell: bash
         run: |
           set -euo pipefail
-
           git config user.name "ios-note-bot"
           git config user.email "ios-note-bot@users.noreply.github.com"
-
           git add "$NOTE_FILE"
           git commit -m "Append iOS note: $(basename "$NOTE_FILE" .md)" || echo "No changes"
           git push
