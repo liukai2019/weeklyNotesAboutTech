@@ -27,6 +27,8 @@ jobs:
 
       - name: Append note
         shell: bash
+        env:
+          NOTE_TEXT: ${{ inputs.text }}
         run: |
           set -euo pipefail
           mkdir -p "AI工作区域"
@@ -37,9 +39,7 @@ jobs:
             echo ""
             echo "## $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S %z')"
             echo ""
-            cat <<'EOF'
-${{ inputs.text }}
-EOF
+            printf '%s\n' "$NOTE_TEXT"
             echo ""
           } >> "$file"
 
