@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       text:
-        description: Markdown content to append
+        description: Base64-encoded Markdown content to append
         required: true
         type: string
 
@@ -25,13 +25,21 @@ jobs:
         with:
           ref: master
 
-      - name: Append note
+      - name: Decode and append note
         shell: bash
         env:
-          NOTE_TEXT: ${{ inputs.text }}
+          NOTE_TEXT_BASE64: ${{ inputs.text }}
         run: |
           set -euo pipefail
           mkdir -p "AI工作区域"
+
+          decoded_note="$(mktemp)"
+          trap 'rm -f "$decoded_note"' EXIT
+
+          if ! printf '%s' "$NOTE_TEXT_BASE64" | base64 --decode > "$decoded_note"; then
+            echo "::error::The text input is not valid Base64."
+            exit 1
+          fi
 
           file="AI工作区域/$(TZ=Asia/Shanghai date +'%Y-%m-%d').md"
 
@@ -39,7 +47,7 @@ jobs:
             echo ""
             echo "## $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S %z')"
             echo ""
-            printf '%s\n' "$NOTE_TEXT"
+            cat "$decoded_note"
             echo ""
           } >> "$file"
 
