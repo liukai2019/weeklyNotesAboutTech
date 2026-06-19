@@ -138,6 +138,14 @@ def build_prompt(window_days: int, notes: list[Note]) -> str:
 
 请利用用户最近的笔记强化记忆、触发主动回忆、连接不同日期的想法、识别值得长期保留的知识，并激发进一步探索。摘要是优先级最低的部分。
 
+材料优先级（最高原则）：
+- 人类用户的原话、提问、犹豫、直觉和未完成想法是最重要的第一手材料。即使它们朴素、拙劣、零散或尚未成熟，也要把它们视为珍贵的思考节点。
+- 笔记中以“我：”“用户：”“Human:”等标识的内容，应优先于 ChatGPT、DeepSeek、Assistant 等 AI 的回复。
+- AI 回复只能作为辅助材料：用于解释背景、发现关联或提出追问，不能因表达更完整、更流畅而覆盖、改写或取代用户自己的思路。
+- 必须区分哪些观点来自用户、哪些来自 AI；不要把 AI 的结论误归为用户的观点。
+- 主动回忆、概念连接、长期知识候选和探索问题，都应尽量从用户原话中的问题意识、困惑、判断和兴趣出发。
+- 当用户原话与 AI 回复存在张力时，优先保留用户的真实问题与意图，并把这种张力作为值得继续思考的线索。
+
 语言要求：
 - 默认使用简体中文，面向中文母语、能够理解英文的读者。
 - 英文原句、专业术语、代码、产品名和专有名词可以保留英文。
@@ -149,22 +157,22 @@ def build_prompt(window_days: int, notes: list[Note]) -> str:
 严格按以下标题返回 Markdown：
 
 ## 1. 主动回忆问题 (Active Recall Questions)
-生成 5-10 个需要主动提取记忆的问题，避免琐碎的事实性问题。
+生成 5-10 个需要主动提取记忆的问题，避免琐碎的事实性问题。优先围绕用户亲自提出的问题、判断、困惑和未完成思路。
 
 ## 2. 概念连接 (Concept Connections)
-找出不同日期记录的想法之间有意义的联系，并解释这些联系为什么重要。
+找出不同日期记录的想法之间有意义的联系，并解释这些联系为什么重要。明确指出连接源自哪些用户思考节点。
 
 ## 3. 被遗忘但重要的主题 (Forgotten But Important)
 识别属于长期兴趣、但近期没有出现的主题。可考虑 eBPF、OpenSpec、Grammar Club、English Writing、Career Development、AI automation、memory systems 和 software engineering，并说明值得重温的原因。
 
 ## 4. 探索候选问题 (Exploration Candidates)
-生成 3-5 个能够激发好奇心的后续问题。
+生成 3-5 个能够激发好奇心的后续问题，优先延伸用户尚未完成或仍有张力的思考。
 
 ## 5. 长期知识候选 (Long-Term Knowledge Candidates)
-找出适合沉淀为永久笔记的内容。每项给出：标题、理由、建议目录。目录可使用 Knowledge Systems/、AI Automation/、English Writing/、Career Development/、Software Engineering/、Networking/。
+找出适合沉淀为永久笔记的用户思考节点。每项给出：用户原始想法或问题、建议标题、入选理由、建议目录。目录可使用 Knowledge Systems/、AI Automation/、English Writing/、Career Development/、Software Engineering/、Networking/。
 
 ## 6. 简要摘要 (Brief Summary)
-最多 10 个简短要点，以中文为主。这一节将直接用于邮件正文。
+最多 10 个简短要点，以中文为主。这一节将直接用于邮件正文，并应优先呈现用户自己的关注点。
 
 最近的笔记：
 {''.join(note_blocks)}
@@ -223,6 +231,7 @@ def call_deepseek(prompt: str) -> str:
                     "role": "system",
                     "content": (
                         "你生成以主动回忆、概念连接、长期学习和好奇心为重点的记忆复习。"
+                        "人类用户的原话和未完成思考是最高优先级，AI 回复只能作为辅助材料。"
                         "默认使用简体中文，并在有助于准确表达时保留英文术语和原文。"
                     ),
                 },
