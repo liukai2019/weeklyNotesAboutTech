@@ -40,7 +40,7 @@ jobs:
         shell: bash
         env:
           QQ_EMAIL: ${{ secrets.QQ_EMAIL }}
-          QQ_EMAIL_AUTH_CODE: ${{ secrets.QQ_EMAIL_AUTH_CODE }}
+          QQ_SMTP_AUTH_CODE: ${{ secrets.QQ_SMTP_AUTH_CODE }}
         run: |
           set -euo pipefail
 
@@ -55,13 +55,13 @@ jobs:
           from pathlib import Path
 
           sender = os.environ.get("QQ_EMAIL", "").strip()
-          auth_code = os.environ.get("QQ_EMAIL_AUTH_CODE", "").strip()
+          auth_code = os.environ.get("QQ_SMTP_AUTH_CODE", "").strip()
           review_file = Path(os.environ["REVIEW_FILE"])
 
           if not sender:
               raise SystemExit("Missing required GitHub secret: QQ_EMAIL")
           if not auth_code:
-              raise SystemExit("Missing required GitHub secret: QQ_EMAIL_AUTH_CODE")
+              raise SystemExit("Missing required GitHub secret: QQ_SMTP_AUTH_CODE")
 
           message = EmailMessage()
           message["Subject"] = f"Memory Review {review_file.stem.removesuffix('-review')}"
