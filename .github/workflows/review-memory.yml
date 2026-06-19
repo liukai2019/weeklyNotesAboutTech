@@ -49,8 +49,10 @@ jobs:
 
           REVIEW_FILE="$review_file" python - <<'PY'
           import os
+          import re
           import smtplib
           import ssl
+          import urllib.parse
           from email.message import EmailMessage
           from pathlib import Path
 
@@ -63,11 +65,32 @@ jobs:
           if not auth_code:
               raise SystemExit("Missing required GitHub secret: QQ_SMTP_AUTH_CODE")
 
+          review = review_file.read_text(encoding="utf-8")
+          summary_match = re.search(
+              r"^## 6\\. .*$([\\s\\S]*?)(?=^## \\d+\\. |\\Z)",
+              review,
+              re.MULTILINE,
+          )
+          summary = (
+              summary_match.group(1).strip()
+              if summary_match
+              else "本次记忆复习已经生成，请通过下面的链接查看完整内容。"
+          )
+
+          server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+          repository = os.environ["GITHUB_REPOSITORY"]
+          review_path = urllib.parse.quote(review_file.as_posix())
+          review_url = f"{server_url}/{repository}/blob/master/{review_path}"
+
           message = EmailMessage()
-          message["Subject"] = f"Memory Review {review_file.stem.removesuffix('-review')}"
+          message["Subject"] = f"记忆复习 {review_file.stem.removesuffix('-review')}"
           message["From"] = sender
           message["To"] = sender
-          message.set_content(review_file.read_text(encoding="utf-8"))
+          message.set_content(
+              "本次记忆复习已生成。\\n\\n"
+              f"简要摘要：\\n{summary}\\n\\n"
+              f"完整内容：{review_url}\\n"
+          )
 
           context = ssl.create_default_context()
           with smtplib.SMTP_SSL("smtp.qq.com", 465, context=context) as smtp:
