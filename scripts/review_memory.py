@@ -134,33 +134,39 @@ def build_prompt(window_days: int, notes: list[Note]) -> str:
         note_blocks.append(header + content)
         used_chars += len(header) + len(content)
 
-    return f"""You are helping build a memory-review system, not a summarizer.
+    return f"""你正在帮助用户建立记忆复习系统，而不是简单地汇总笔记。
 
-Use the user's recent notes to strengthen memory, provoke active recall, connect ideas across days, identify durable knowledge, and generate curiosity. Summary is the lowest-priority output.
+请利用用户最近的笔记强化记忆、触发主动回忆、连接不同日期的想法、识别值得长期保留的知识，并激发进一步探索。摘要是优先级最低的部分。
 
-Review window: last {window_days} day(s)
+语言要求：
+- 默认使用简体中文，面向中文母语、能够理解英文的读者。
+- 英文原句、专业术语、代码、产品名和专有名词可以保留英文。
+- 首次出现不常见的英文术语时，用简短中文解释；不要为了中文化而生硬翻译。
+- 主动回忆问题和分析说明应以中文为主。
 
-Return Markdown with exactly these sections:
+复习窗口：最近 {window_days} 天
 
-## 1. Active Recall Questions
-Generate 5-10 retrieval-heavy questions. Avoid trivial factual questions.
+严格按以下标题返回 Markdown：
 
-## 2. Concept Connections
-Identify meaningful relationships between ideas captured on different days. Explain why each connection matters.
+## 1. 主动回忆问题 (Active Recall Questions)
+生成 5-10 个需要主动提取记忆的问题，避免琐碎的事实性问题。
 
-## 3. Forgotten But Important
-Identify topics that belong to long-term interests but have not appeared recently. Consider recurring interests such as eBPF, OpenSpec, Grammar Club, English Writing, Career Development, AI automation, memory systems, and software engineering. Explain why they should be revisited.
+## 2. 概念连接 (Concept Connections)
+找出不同日期记录的想法之间有意义的联系，并解释这些联系为什么重要。
 
-## 4. Exploration Candidates
-Generate 3-5 follow-up questions for curiosity generation.
+## 3. 被遗忘但重要的主题 (Forgotten But Important)
+识别属于长期兴趣、但近期没有出现的主题。可考虑 eBPF、OpenSpec、Grammar Club、English Writing、Career Development、AI automation、memory systems 和 software engineering，并说明值得重温的原因。
 
-## 5. Long-Term Knowledge Candidates
-Identify notes that should become permanent notes. For each candidate provide: title, reason, suggested destination. Use destinations such as Knowledge Systems/, AI Automation/, English Writing/, Career Development/, Software Engineering/, Networking/.
+## 4. 探索候选问题 (Exploration Candidates)
+生成 3-5 个能够激发好奇心的后续问题。
 
-## 6. Brief Summary
-Maximum 10 bullet points. Keep concise.
+## 5. 长期知识候选 (Long-Term Knowledge Candidates)
+找出适合沉淀为永久笔记的内容。每项给出：标题、理由、建议目录。目录可使用 Knowledge Systems/、AI Automation/、English Writing/、Career Development/、Software Engineering/、Networking/。
 
-Recent notes:
+## 6. 简要摘要 (Brief Summary)
+最多 10 个简短要点，以中文为主。这一节将直接用于邮件正文。
+
+最近的笔记：
 {''.join(note_blocks)}
 """
 
@@ -216,8 +222,8 @@ def call_deepseek(prompt: str) -> str:
                 {
                     "role": "system",
                     "content": (
-                        "You create memory reviews that emphasize active recall, "
-                        "conceptual connection, long-term learning, and curiosity."
+                        "你生成以主动回忆、概念连接、长期学习和好奇心为重点的记忆复习。"
+                        "默认使用简体中文，并在有助于准确表达时保留英文术语和原文。"
                     ),
                 },
                 {"role": "user", "content": prompt},
